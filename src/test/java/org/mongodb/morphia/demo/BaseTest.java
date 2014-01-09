@@ -17,5 +17,7 @@ public class BaseTest {
         morphia = new Morphia();
         datastore = morphia.createDatastore(new MongoClient(), "morphia-demo");
         datastore.getDB().dropDatabase();
+        morphia.mapPackage("org.mongodb.morphia.demo");
+        datastore.ensureIndexes();
     }
 }

@@ -1,6 +1,7 @@
 package org.mongodb.morphia.demo;
 
 import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.UpdateOperations;
 import org.testng.annotations.Test;
 
 import java.text.ParseException;
@@ -30,25 +31,25 @@ public class Mapping extends BaseTest {
     public void repositories() throws ParseException {
         Organization org = new Organization("mongodb");
         datastore.save(org);
-        
+
         Repository morphia1 = new Repository(org, "morphia");
         Repository morphia2 = new Repository(evanchooly, "morphia");
-        
+
         datastore.save(morphia1);
         datastore.save(morphia2);
-        
+
         evanchooly.repositories.add(morphia1);
         evanchooly.repositories.add(morphia2);
-        
+
         datastore.save(evanchooly);
     }
-    
+
     @Test(dependsOnMethods = {"repositories"})
     public void query() {
         Query<Repository> query = datastore.createQuery(Repository.class);
-        
+
         Repository repository = query.get();
-        
+
         List<Repository> repositories = query.asList();
 
         Iterable<Repository> fetch = query.fetch();
@@ -59,5 +60,20 @@ public class Mapping extends BaseTest {
         System.out.println("memberSince = " + memberSince);
         GithubUser since = datastore.createQuery(GithubUser.class).field("since").equal(date).get();
         System.out.println("since = " + since);
+    }
+
+    @Test(dependsOnMethods = {"repositories"})
+    public void updates() {
+        evanchooly.followers = 12;
+        evanchooly.following = 678;
+        datastore.save(evanchooly);
+    }
+    @Test(dependsOnMethods = {"repositories"})
+    public void bulkUpdates() {
+        UpdateOperations<GithubUser> update = datastore.createUpdateOperations(GithubUser.class)
+                                                       .inc("followers")
+                                                       .set("following", 42);
+        Query<GithubUser> query = datastore.createQuery(GithubUser.class).field("followers").equal(0);
+        datastore.update(query, update);
     }
 }
