@@ -6,6 +6,7 @@ targetCompatibility = JavaVersion.VERSION_1_7
 version = '1.0'
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 

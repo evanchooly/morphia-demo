@@ -1,20 +1,24 @@
 package org.mongodb.morphia.demo;
 
+import org.mongodb.morphia.query.MorphiaIterator;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
-public class Mapping extends BaseTest {
+public class Demos extends BaseTest {
     private SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
     private GithubUser evanchooly;
     private Date date;
 
-    public Mapping() throws ParseException {
+    public Demos() throws ParseException {
         date = sdf.parse("6-15-1987");
     }
 
@@ -23,6 +27,7 @@ public class Mapping extends BaseTest {
         evanchooly = new GithubUser("evanchooly");
         evanchooly.fullName = "Justin Lee";
         evanchooly.memberSince = date;
+        evanchooly.following = 1000;
 
         datastore.save(evanchooly);
     }
@@ -53,6 +58,17 @@ public class Mapping extends BaseTest {
         List<Repository> repositories = query.asList();
 
         Iterable<Repository> fetch = query.fetch();
+        ((MorphiaIterator)fetch).close();
+        
+        Iterator<Repository> iterator = fetch.iterator();
+        while(iterator.hasNext()) {
+            iterator.next();
+        }
+        
+        iterator = fetch.iterator();
+        while(iterator.hasNext()) {
+            iterator.next();
+        }
 
         query.field("owner").equal(evanchooly).get();
 
@@ -68,12 +84,28 @@ public class Mapping extends BaseTest {
         evanchooly.following = 678;
         datastore.save(evanchooly);
     }
+    
     @Test(dependsOnMethods = {"repositories"})
-    public void bulkUpdates() {
+    public void massUpdates() {
         UpdateOperations<GithubUser> update = datastore.createUpdateOperations(GithubUser.class)
                                                        .inc("followers")
                                                        .set("following", 42);
         Query<GithubUser> query = datastore.createQuery(GithubUser.class).field("followers").equal(0);
         datastore.update(query, update);
+    }
+
+    @Test(dependsOnMethods = {"repositories"}, expectedExceptions = {ConcurrentModificationException.class})
+    public void versioned() {
+        Organization organization = datastore.createQuery(Organization.class).get();
+        Organization organization2 = datastore.createQuery(Organization.class).get();
+
+        Assert.assertEquals(organization.version, 1L);                
+        datastore.save(organization);
+        
+        Assert.assertEquals(organization.version, 2L);        
+        datastore.save(organization);
+        
+        Assert.assertEquals(organization.version, 3L);
+        datastore.save(organization2);
     }
 }
