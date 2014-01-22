@@ -15,6 +15,7 @@ public class BaseTest {
     @BeforeTest
     public void connect() throws UnknownHostException {
         morphia = new Morphia();
+//        morphia.getMapper().getOptions().storeEmpties = true;
         datastore = morphia.createDatastore(new MongoClient(), "morphia-demo");
         datastore.getDB().dropDatabase();
         morphia.mapPackage("org.mongodb.morphia.demo");
